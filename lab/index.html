@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gate 0 &amp; Phase 1 — Acoustic Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../vendor/ggwave.js"></script>
+  <script src="../shared/ggwave-helper.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-6">
+  <div class="max-w-5xl mx-auto space-y-6">
+
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 pb-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Acoustic-Biometric PoC — Lab</h1>
+        <p class="text-sm text-slate-400">Gate 0 (HTTPS + Mic + WebAuthn) &amp; Phase 1 (ggwave 14–20 kHz Link Test)</p>
+      </div>
+      <div class="text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-300">
+        <div>Origin: <span id="originLabel" class="text-sky-400"></span></div>
+        <div>Secure Context: <span id="secureLabel"></span></div>
+      </div>
+    </header>
+
+    <!-- Gate 0 Panel -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Gate 0: Browser Capability Check (Run on Phone)</h2>
+          <p class="text-xs text-slate-400">Verifies HTTPS tunnel context, microphone permission, and platform biometric authenticator availability.</p>
+        </div>
+        <button id="btnGate0" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 font-medium text-sm text-white transition">
+          Run Gate 0 Check
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs text-slate-400">getUserMedia({ audio: true })</span>
+            <span id="g0MicBadge" class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-800 text-slate-400">NOT TESTED</span>
+          </div>
+          <div id="g0MicDetail" class="text-xs text-slate-300 font-mono break-all">Tap "Run Gate 0 Check" to probe microphone.</div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs text-slate-400">isUserVerifyingPlatformAuthenticatorAvailable()</span>
+            <span id="g0WebAuthnBadge" class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-800 text-slate-400">NOT TESTED</span>
+          </div>
+          <div id="g0WebAuthnDetail" class="text-xs text-slate-300 font-mono break-all">Tap "Run Gate 0 Check" to probe biometric WebAuthn.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Phase 1: Transmit & Receive -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Transmit -->
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-white">Transmit Mode (Board Speaker)</h2>
+          <span id="txStatus" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">IDLE</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="txToken" class="block text-xs font-medium text-slate-400 mb-1">4-Char Token</label>
+            <div class="flex gap-2">
+              <input id="txToken" type="text" maxlength="16" value="A1F9"
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-lg tracking-widest uppercase text-emerald-400 focus:outline-none focus:border-emerald-500" />
+              <button id="btnRandToken" type="button" title="Random 4-hex"
+                class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200">
+                Rnd
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label for="txLoopSec" class="block text-xs font-medium text-slate-400 mb-1">Loop every N sec</label>
+            <input id="txLoopSec" type="number" min="1" max="30" step="0.5" value="3.5"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm text-white focus:outline-none focus:border-sky-500" />
+          </div>
+        </div>
+
+        <div>
+          <label for="txProtocol" class="block text-xs font-medium text-slate-400 mb-1">ggwave Protocol</label>
+          <select id="txProtocol"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-sky-500">
+            <option value="GGWAVE_PROTOCOL_ULTRASOUND_FASTEST" selected>GGWAVE_PROTOCOL_ULTRASOUND_FASTEST</option>
+            <option value="GGWAVE_PROTOCOL_ULTRASOUND_FAST">GGWAVE_PROTOCOL_ULTRASOUND_FAST</option>
+            <option value="GGWAVE_PROTOCOL_ULTRASOUND_NORMAL">GGWAVE_PROTOCOL_ULTRASOUND_NORMAL</option>
+            <option value="GGWAVE_PROTOCOL_AUDIBLE_FAST">GGWAVE_PROTOCOL_AUDIBLE_FAST (sanity check)</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <label for="txVolume">Volume (10–100)</label>
+            <span id="txVolumeVal" class="font-mono text-sky-400 font-semibold">50</span>
+          </div>
+          <input id="txVolume" type="range" min="10" max="100" step="5" value="50" class="w-full accent-sky-500" />
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input id="txAutoRotate" type="checkbox" checked class="accent-emerald-500 w-4 h-4 rounded" />
+            <span>Auto-rotate 4-char token on every loop TX</span>
+          </label>
+          <span id="txDuration" class="font-mono text-slate-400">dur: —</span>
+        </div>
+
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button id="btnPlayOnce" class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition">
+            Play Once
+          </button>
+          <button id="btnToggleLoop" class="flex-1 px-4 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-sm text-white transition">
+            Start Loop
+          </button>
+        </div>
+
+        <div class="text-xs font-mono text-slate-400 flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-3">
+          <span>TX Count: <strong id="txCount" class="text-slate-200">0</strong></span>
+          <span>Last TX: <strong id="txLastTime" class="text-sky-400">—</strong></span>
+          <span>SR: <strong id="txSampleRate" class="text-slate-200">—</strong></span>
+        </div>
+      </section>
+
+      <!-- Receive -->
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-white">Receive Mode (Student Phone Mic)</h2>
+          <span id="rxStatus" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">STOPPED</span>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button id="btnToggleRx" class="flex-1 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 font-semibold text-sm text-white transition">
+            Start Mic Receiver
+          </button>
+          <button id="btnClearRx" class="px-3 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300">
+            Reset Log
+          </button>
+        </div>
+
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+          <input id="rxBeepToggle" type="checkbox" checked class="accent-emerald-500 w-4 h-4 rounded" />
+          <span>Beep + vibrate immediately on every captured signal</span>
+        </label>
+
+        <!-- Big Capture Notification Button -->
+        <button id="rxCaptureBtn" type="button" disabled
+          class="w-full text-left rounded-xl p-4 border-2 border-slate-800 bg-slate-950 text-slate-400 transition-all duration-200">
+          <div class="flex items-center justify-between gap-2">
+            <span id="rxCaptureHeadline" class="text-sm font-bold tracking-wide uppercase">Waiting for room signal…</span>
+            <span id="rxCaptureAge" class="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">—</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between gap-2">
+            <span id="rxLastToken" class="font-mono text-3xl font-extrabold tracking-widest text-slate-500">—</span>
+            <span id="rxLastTime" class="font-mono text-xs text-slate-400 text-right">Not captured yet</span>
+          </div>
+          <div id="rxCaptureSub" class="mt-1.5 text-xs text-slate-500">Start Mic Receiver, then play sound from laptop.</div>
+        </button>
+
+        <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
+            <div class="text-slate-400">Actual AudioContext.sampleRate</div>
+            <div id="rxSampleRate" class="text-base font-bold text-sky-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
+            <div class="text-slate-400">Decoded Count</div>
+            <div id="rxDecodeCount" class="text-base font-bold text-emerald-400 mt-0.5">0</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Mic Input Level</span>
+            <span id="rxLevelText" class="font-mono">0%</span>
+          </div>
+          <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+            <div id="rxLevelBar" class="h-full bg-emerald-500 transition-all duration-75" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-xs text-slate-400 mb-1">Capture Timeline (newest first)</div>
+          <div id="rxLog" class="h-32 overflow-y-auto bg-slate-950 border border-slate-800 rounded-lg p-2 font-mono text-xs space-y-1 text-slate-300">
+            <div class="text-slate-500">Waiting for mic start…</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Live FFT (14-20 kHz) -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Live FFT Spectrum (14 – 20 kHz)</h2>
+          <p class="text-xs text-slate-400">Visualizes ultrasonic acoustic signal and active peak band.</p>
+        </div>
+        <div class="text-xs font-mono flex flex-wrap gap-3 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
+          <span>Source: <strong id="fftSource" class="text-slate-300">NONE</strong></span>
+          <span>Peak: <strong id="fftPeak" class="text-amber-400">—</strong></span>
+          <span>Active Band (&gt;-65 dB): <strong id="fftBand" class="text-emerald-400">—</strong></span>
+        </div>
+      </div>
+
+      <canvas id="fftCanvas" width="900" height="220" class="w-full h-52 bg-slate-950 border border-slate-800 rounded-lg"></canvas>
+    </section>
+
+  </div>
+
+  <script>
+    (function () {
+      const originLabel = document.getElementById('originLabel');
+      const secureLabel = document.getElementById('secureLabel');
+      originLabel.textContent = window.location.origin;
+      secureLabel.textContent = window.isSecureContext ? 'YES (HTTPS/localhost)' : 'NO (blocked on phone!)';
+      secureLabel.className = window.isSecureContext ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold';
+
+      // --- Gate 0 ---
+      const btnGate0 = document.getElementById('btnGate0');
+      const g0MicBadge = document.getElementById('g0MicBadge');
+      const g0MicDetail = document.getElementById('g0MicDetail');
+      const g0WebAuthnBadge = document.getElementById('g0WebAuthnBadge');
+      const g0WebAuthnDetail = document.getElementById('g0WebAuthnDetail');
+
+      function setBadge(el, ok, text) {
+        el.textContent = text;
+        el.className = ok
+          ? 'px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-700'
+          : 'px-2 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-400 border border-rose-700';
+      }
+
+      btnGate0.addEventListener('click', async () => {
+        // 1. Mic check
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('navigator.mediaDevices.getUserMedia unavailable');
+          }
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const track = stream.getAudioTracks()[0];
+          const settings = track && track.getSettings ? track.getSettings() : {};
+          stream.getTracks().forEach((t) => t.stop());
+          setBadge(g0MicBadge, true, 'PASS');
+          g0MicDetail.textContent = `Mic OK: "${track ? track.label : 'default'}" | settings=${JSON.stringify(settings)}`;
+        } catch (err) {
+          setBadge(g0MicBadge, false, 'FAIL');
+          g0MicDetail.textContent = `${err.name || 'Error'}: ${err.message}`;
+        }
+
+        // 2. WebAuthn platform authenticator check
+        try {
+          if (typeof window.PublicKeyCredential === 'undefined' ||
+              typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== 'function') {
+            throw new Error('PublicKeyCredential API unavailable');
+          }
+          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setBadge(g0WebAuthnBadge, available, available ? 'PASS (TRUE)' : 'FAIL (FALSE)');
+          g0WebAuthnDetail.textContent = available
+            ? 'Platform biometric authenticator (fingerprint / Face ID / screen lock) is available.'
+            : 'Returned false — no user-verifying platform authenticator detected.';
+        } catch (err) {
+          setBadge(g0WebAuthnBadge, false, 'FAIL');
+          g0WebAuthnDetail.textContent = `${err.name || 'Error'}: ${err.message}`;
+        }
+      });
+
+      // --- Shared FFT state ---
+      const fftCanvas = document.getElementById('fftCanvas');
+      const fftCtx = fftCanvas.getContext('2d');
+      const fftSourceEl = document.getElementById('fftSource');
+      const fftPeakEl = document.getElementById('fftPeak');
+      const fftBandEl = document.getElementById('fftBand');
+
+      let rxAnalyser = null;
+      let rxSampleRate = 48000;
+      let txAnalyser = null;
+      let txAudioCtx = null;
+      let txHandle = null;
+      let txLoopTimer = null;
+      let txCount = 0;
+
+      function drawFftLoop() {
+        requestAnimationFrame(drawFftLoop);
+
+        const activeAnalyser = rxAnalyser || (txHandle ? txAnalyser : null);
+        const activeRate = rxAnalyser ? rxSampleRate : (txAudioCtx ? txAudioCtx.sampleRate : 48000);
+        fftSourceEl.textContent = rxAnalyser ? 'MIC INPUT' : (txHandle && txAnalyser ? 'TX OUTPUT' : 'NONE');
+
+        const w = fftCanvas.width;
+        const h = fftCanvas.height;
+        fftCtx.fillStyle = '#020617';
+        fftCtx.fillRect(0, 0, w, h);
+
+        const minFreq = 14000;
+        const maxFreq = 20000;
+
+        // Draw 1 kHz grid lines from 14 kHz to 20 kHz
+        fftCtx.strokeStyle = '#1e293b';
+        fftCtx.fillStyle = '#94a3b8';
+        fftCtx.font = '11px monospace';
+        fftCtx.lineWidth = 1;
+        for (let f = minFreq; f <= maxFreq; f += 1000) {
+          const x = ((f - minFreq) / (maxFreq - minFreq)) * w;
+          fftCtx.beginPath();
+          fftCtx.moveTo(x, 0);
+          fftCtx.lineTo(x, h - 22);
+          fftCtx.stroke();
+          const label = `${f / 1000}k`;
+          const textX = f === maxFreq ? x - 26 : (f === minFreq ? x + 4 : x - 10);
+          fftCtx.fillText(label, textX, h - 6);
+        }
+
+        if (!activeAnalyser) {
+          return;
+        }
+
+        const nyquist = activeRate / 2;
+        if (nyquist <= minFreq) {
+          fftPeakEl.textContent = `Nyquist ${(nyquist / 1000).toFixed(1)} kHz too low`;
+          return;
+        }
+
+        const binCount = activeAnalyser.frequencyBinCount;
+        const freqData = new Float32Array(binCount);
+        activeAnalyser.getFloatFrequencyData(freqData);
+        const hzPerBin = activeRate / activeAnalyser.fftSize;
+
+        const startBin = Math.max(0, Math.floor(minFreq / hzPerBin));
+        const endBin = Math.min(binCount - 1, Math.ceil(maxFreq / hzPerBin));
+        const numBins = Math.max(1, endBin - startBin + 1);
+        const barW = w / numBins;
+
+        let peakDb = -Infinity;
+        let peakHz = 0;
+        let bandStartHz = null;
+        let bandEndHz = null;
+
+        for (let i = startBin; i <= endBin; i++) {
+          const db = freqData[i];
+          const hz = i * hzPerBin;
+          // Normalize -110 dB .. -15 dB
+          const norm = Math.max(0, Math.min(1, (db + 110) / 95));
+          const barH = norm * (h - 28);
+          const x = ((hz - minFreq) / (maxFreq - minFreq)) * w;
+
+          fftCtx.fillStyle = db > -65 ? '#10b981' : '#38bdf8';
+          fftCtx.fillRect(x, h - 24 - barH, Math.max(2, barW - 1), barH);
+
+          if (db > peakDb) {
+            peakDb = db;
+            peakHz = hz;
+          }
+          if (db > -65) {
+            if (bandStartHz === null) bandStartHz = hz;
+            bandEndHz = hz;
+          }
+        }
+
+        if (peakDb > -120) {
+          fftPeakEl.textContent = `${(peakHz / 1000).toFixed(2)} kHz (${peakDb.toFixed(0)} dB)`;
+        }
+        if (bandStartHz !== null) {
+          fftBandEl.textContent = `${(bandStartHz / 1000).toFixed(2)}–${(bandEndHz / 1000).toFixed(2)} kHz`;
+        } else {
+          fftBandEl.textContent = 'quiet';
+        }
+      }
+      requestAnimationFrame(drawFftLoop);
+
+      function formatTimeMs(ts) {
+        const d = new Date(ts);
+        return d.toTimeString().slice(0, 8) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+      }
+
+      function randomHexToken() {
+        const bytes = new Uint8Array(2);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      }
+
+      // --- Transmit Mode ---
+      const txTokenInput = document.getElementById('txToken');
+      const btnRandToken = document.getElementById('btnRandToken');
+      const txLoopSecInput = document.getElementById('txLoopSec');
+      const txProtocolSelect = document.getElementById('txProtocol');
+      const txVolumeSlider = document.getElementById('txVolume');
+      const txVolumeVal = document.getElementById('txVolumeVal');
+      const txAutoRotate = document.getElementById('txAutoRotate');
+      const txDurationEl = document.getElementById('txDuration');
+      const btnPlayOnce = document.getElementById('btnPlayOnce');
+      const btnToggleLoop = document.getElementById('btnToggleLoop');
+      const txStatusEl = document.getElementById('txStatus');
+      const txCountEl = document.getElementById('txCount');
+      const txLastTimeEl = document.getElementById('txLastTime');
+      const txSampleRateEl = document.getElementById('txSampleRate');
+
+      let txPlaying = false;
+
+      txVolumeSlider.addEventListener('input', () => {
+        txVolumeVal.textContent = txVolumeSlider.value;
+      });
+
+      btnRandToken.addEventListener('click', () => {
+        txTokenInput.value = randomHexToken();
+      });
+
+      async function ensureTxAudio() {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!txAudioCtx) {
+          txAudioCtx = new AudioCtx({ sampleRate: 48000 });
+        }
+        if (txAudioCtx.state === 'suspended') {
+          await txAudioCtx.resume();
+        }
+        if (!txAnalyser) {
+          txAnalyser = txAudioCtx.createAnalyser();
+          txAnalyser.fftSize = 4096;
+          txAnalyser.smoothingTimeConstant = 0.15;
+          txAnalyser.connect(txAudioCtx.destination);
+        }
+        if (!txHandle) {
+          txHandle = await GGWaveHelper.createInstance(txAudioCtx.sampleRate, txAudioCtx.sampleRate);
+        }
+        txSampleRateEl.textContent = `${txAudioCtx.sampleRate} Hz`;
+      }
+
+      async function transmitOnce() {
+        if (txPlaying) return;
+        const token = txTokenInput.value.trim();
+        if (!token) return;
+        txPlaying = true;
+        try {
+          await ensureTxAudio();
+          const protocol = txProtocolSelect.value;
+          const volume = Number(txVolumeSlider.value);
+          const samples = GGWaveHelper.encodeToFloat32(txHandle, token, protocol, volume);
+          const durSec = samples.length / txAudioCtx.sampleRate;
+          txDurationEl.textContent = `dur: ${durSec.toFixed(2)}s`;
+
+          const source = GGWaveHelper.playFloat32(txAudioCtx, samples, txAnalyser);
+          txCount += 1;
+          txCountEl.textContent = String(txCount);
+          txLastTimeEl.textContent = formatTimeMs(Date.now());
+          txStatusEl.textContent = `● PLAYING "${token}"`;
+          txStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/50';
+
+          source.onended = () => {
+            txPlaying = false;
+            if (txLoopTimer) {
+              txStatusEl.textContent = 'WAITING NEXT PULSE';
+              txStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-300';
+            } else {
+              txStatusEl.textContent = 'IDLE';
+              txStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+            }
+          };
+        } catch (err) {
+          txPlaying = false;
+          throw err;
+        }
+      }
+
+      btnPlayOnce.addEventListener('click', () => {
+        transmitOnce().catch((err) => {
+          txStatusEl.textContent = `ERR: ${err.message}`;
+          txStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-400';
+        });
+      });
+
+      function stopLoop() {
+        if (txLoopTimer) {
+          clearInterval(txLoopTimer);
+          txLoopTimer = null;
+        }
+        btnToggleLoop.textContent = 'Start Loop';
+        btnToggleLoop.className = 'flex-1 px-4 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-sm text-white transition';
+        if (!txPlaying) {
+          txStatusEl.textContent = 'IDLE';
+          txStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+        }
+      }
+
+      btnToggleLoop.addEventListener('click', async () => {
+        if (txLoopTimer) {
+          stopLoop();
+          return;
+        }
+        try {
+          await transmitOnce();
+          const intervalMs = Math.max(1000, Number(txLoopSecInput.value || 3.5) * 1000);
+          txLoopTimer = setInterval(() => {
+            if (txPlaying) return;
+            if (txAutoRotate.checked) {
+              txTokenInput.value = randomHexToken();
+            }
+            transmitOnce().catch(console.error);
+          }, intervalMs);
+          btnToggleLoop.textContent = 'Stop Loop';
+          btnToggleLoop.className = 'flex-1 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 font-semibold text-sm text-white transition';
+        } catch (err) {
+          txStatusEl.textContent = `ERR: ${err.message}`;
+        }
+      });
+
+      // --- Receive Mode ---
+      const btnToggleRx = document.getElementById('btnToggleRx');
+      const btnClearRx = document.getElementById('btnClearRx');
+      const rxBeepToggle = document.getElementById('rxBeepToggle');
+      const rxCaptureBtn = document.getElementById('rxCaptureBtn');
+      const rxCaptureHeadline = document.getElementById('rxCaptureHeadline');
+      const rxCaptureAge = document.getElementById('rxCaptureAge');
+      const rxCaptureSub = document.getElementById('rxCaptureSub');
+      const rxStatusEl = document.getElementById('rxStatus');
+      const rxSampleRateEl = document.getElementById('rxSampleRate');
+      const rxDecodeCountEl = document.getElementById('rxDecodeCount');
+      const rxLevelBar = document.getElementById('rxLevelBar');
+      const rxLevelText = document.getElementById('rxLevelText');
+      const rxLastTokenEl = document.getElementById('rxLastToken');
+      const rxLastTimeEl = document.getElementById('rxLastTime');
+      const rxLogEl = document.getElementById('rxLog');
+
+      let rxSession = null;
+      let rxDecodeCount = 0;
+      let lastDecodeAt = null;
+      let lastDecodedToken = null;
+      let lastConfirmedAt = null;
+
+      function playCaptureBeep(audioCtx) {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        try {
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.setValueAtTime(1320, now + 0.045);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.095);
+        } catch (_) {}
+      }
+
+      function updateCaptureAge() {
+        if (lastDecodeAt === null) {
+          rxCaptureBtn.disabled = true;
+          rxCaptureBtn.className = 'w-full text-left rounded-xl p-4 border-2 border-slate-800 bg-slate-950 text-slate-400 transition-all duration-200';
+          rxCaptureHeadline.textContent = 'Waiting for room signal…';
+          rxCaptureHeadline.className = 'text-sm font-bold tracking-wide uppercase text-slate-400';
+          rxCaptureAge.textContent = '—';
+          rxCaptureAge.className = 'font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+          rxLastTokenEl.textContent = '—';
+          rxLastTokenEl.className = 'font-mono text-3xl font-extrabold tracking-widest text-slate-500';
+          rxLastTimeEl.textContent = 'Not captured yet';
+          rxCaptureSub.textContent = 'Start Mic Receiver, then play sound from laptop.';
+          rxCaptureSub.className = 'mt-1.5 text-xs text-slate-500';
+          return;
+        }
+
+        const ageSec = Math.max(0, (Date.now() - lastDecodeAt) / 1000);
+        const confirmed = lastConfirmedAt !== null && lastConfirmedAt >= lastDecodeAt;
+        rxCaptureBtn.disabled = false;
+        rxLastTokenEl.textContent = lastDecodedToken;
+        rxLastTimeEl.textContent = `Captured at ${formatTimeMs(lastDecodeAt)}`;
+
+        if (confirmed) {
+          rxCaptureHeadline.textContent = '✓ ATTENDANCE CONFIRMED (TEST)';
+          rxCaptureHeadline.className = 'text-sm font-bold tracking-wide uppercase text-emerald-300';
+          rxCaptureSub.textContent = `✓ ATTENDANCE MARKED (LAB TEST) — token ${lastDecodedToken} @ ${formatTimeMs(lastConfirmedAt)}`;
+          rxCaptureSub.className = 'mt-1.5 text-xs text-emerald-300 font-mono';
+        } else {
+          rxCaptureHeadline.textContent = '✓ SIGNAL CAPTURED — TAP TO CONFIRM';
+          rxCaptureHeadline.className = 'text-sm font-bold tracking-wide uppercase text-emerald-300';
+          rxCaptureSub.textContent = 'Tap this button to confirm attendance capture for this token.';
+          rxCaptureSub.className = 'mt-1.5 text-xs text-emerald-200/80';
+        }
+
+        if (ageSec <= 3) {
+          rxCaptureBtn.className = 'w-full text-left rounded-xl p-4 border-2 border-emerald-400 bg-emerald-500/20 ring-4 ring-emerald-400/40 text-white transition-all duration-200 cursor-pointer';
+          rxCaptureAge.textContent = `${ageSec.toFixed(1)}s ago`;
+          rxCaptureAge.className = 'font-mono text-xs px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-bold';
+          rxLastTokenEl.className = 'font-mono text-3xl font-extrabold tracking-widest text-emerald-300';
+        } else if (ageSec <= 9) {
+          rxCaptureBtn.className = 'w-full text-left rounded-xl p-4 border-2 border-emerald-700 bg-emerald-950/40 text-slate-100 transition-all duration-200 cursor-pointer';
+          rxCaptureAge.textContent = `${ageSec.toFixed(1)}s ago`;
+          rxCaptureAge.className = 'font-mono text-xs px-2 py-0.5 rounded bg-emerald-900 text-emerald-300 font-semibold';
+          rxLastTokenEl.className = 'font-mono text-3xl font-extrabold tracking-widest text-emerald-400';
+        } else {
+          rxCaptureBtn.className = 'w-full text-left rounded-xl p-4 border-2 border-amber-700/60 bg-slate-950 text-slate-300 transition-all duration-200 cursor-pointer';
+          rxCaptureAge.textContent = `STALE (${ageSec.toFixed(0)}s ago)`;
+          rxCaptureAge.className = 'font-mono text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-700/50';
+          rxLastTokenEl.className = 'font-mono text-3xl font-extrabold tracking-widest text-amber-400';
+          if (!confirmed) {
+            rxCaptureHeadline.textContent = '⚠ PREVIOUS SIGNAL EXPIRED — WAITING FOR NEXT PULSE';
+            rxCaptureHeadline.className = 'text-sm font-bold tracking-wide uppercase text-amber-400';
+          }
+        }
+      }
+      setInterval(updateCaptureAge, 100);
+
+      function appendRxLog(message, tone) {
+        if (rxLogEl.firstElementChild && rxLogEl.firstElementChild.textContent.includes('Waiting for mic')) {
+          rxLogEl.innerHTML = '';
+        }
+        const row = document.createElement('div');
+        row.className = tone === 'emerald'
+          ? 'text-emerald-400'
+          : (tone === 'amber' ? 'text-amber-400' : 'text-slate-400');
+        row.textContent = message;
+        rxLogEl.prepend(row);
+      }
+
+      rxCaptureBtn.addEventListener('click', () => {
+        if (lastDecodeAt === null) return;
+        lastConfirmedAt = Date.now();
+        updateCaptureAge();
+        appendRxLog(`[${formatTimeMs(lastConfirmedAt)}] CONFIRMED "${lastDecodedToken}" (tapped capture button)`, 'emerald');
+      });
+
+      btnClearRx.addEventListener('click', () => {
+        rxDecodeCount = 0;
+        lastDecodeAt = null;
+        lastDecodedToken = null;
+        lastConfirmedAt = null;
+        rxDecodeCountEl.textContent = '0';
+        updateCaptureAge();
+        rxLogEl.innerHTML = '<div class="text-slate-500">Log cleared.</div>';
+      });
+
+      btnToggleRx.addEventListener('click', async () => {
+        if (rxSession) {
+          await rxSession.stop();
+          rxSession = null;
+          rxAnalyser = null;
+          rxLevelBar.style.width = '0%';
+          rxLevelText.textContent = '0%';
+          btnToggleRx.textContent = 'Start Mic Receiver';
+          btnToggleRx.className = 'flex-1 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 font-semibold text-sm text-white transition';
+          rxStatusEl.textContent = 'STOPPED';
+          rxStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+          return;
+        }
+
+        try {
+          rxStatusEl.textContent = 'STARTING…';
+          rxSession = await GGWaveHelper.startListening({
+            onSampleRate: (rate) => {
+              rxSampleRate = rate;
+              rxSampleRateEl.textContent = `${rate} Hz`;
+            },
+            onAnalyserReady: (analyser) => {
+              rxAnalyser = analyser;
+            },
+            onLevel: (rms) => {
+              const pct = Math.min(100, Math.round(rms * 400));
+              rxLevelBar.style.width = `${pct}%`;
+              rxLevelText.textContent = `${pct}%`;
+            },
+            onToken: (text, info) => {
+              rxDecodeCount += 1;
+              const prevDecodeAt = lastDecodeAt;
+              const deltaSec = prevDecodeAt !== null ? (info.at - prevDecodeAt) / 1000 : null;
+              const deltaLabel = deltaSec !== null ? `+${deltaSec.toFixed(1)}s` : 'first';
+
+              lastDecodeAt = info.at;
+              lastDecodedToken = text;
+              lastConfirmedAt = null;
+
+              rxDecodeCountEl.textContent = String(rxDecodeCount);
+              updateCaptureAge();
+
+              const isGap = deltaSec !== null && deltaSec > 6;
+              appendRxLog(
+                `#${rxDecodeCount} [${formatTimeMs(info.at)}] CAPTURED "${text}" (${deltaLabel})`,
+                isGap ? 'amber' : 'emerald'
+              );
+
+              if (rxBeepToggle.checked) {
+                playCaptureBeep(rxSession && rxSession.audioCtx);
+                if (typeof navigator.vibrate === 'function') {
+                  navigator.vibrate([80, 40, 80]);
+                }
+              }
+            },
+          });
+
+          btnToggleRx.textContent = 'Stop Mic Receiver';
+          btnToggleRx.className = 'flex-1 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 font-semibold text-sm text-white transition';
+          rxStatusEl.textContent = 'LISTENING';
+          rxStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400';
+          appendRxLog(`[${formatTimeMs(Date.now())}] Mic started @ ${rxSession.sampleRate} Hz`, 'slate');
+        } catch (err) {
+          rxStatusEl.textContent = 'ERROR';
+          rxStatusEl.className = 'text-xs font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-400';
+          appendRxLog(`ERR: ${err.name || 'Error'} - ${err.message}`, 'amber');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
