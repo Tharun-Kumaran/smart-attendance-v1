@@ -37,6 +37,7 @@
   const chkVibrate = document.getElementById('chkVibrate');
 
   // State
+  const getHelper = () => window.GGWaveHelper || window.ggwaveHelper;
   let audioCtx = null;
   let micStream = null;
   let micSource = null;
@@ -120,7 +121,7 @@
 
       // ggwave WASM instance
       if (!ggwaveHandle) {
-        ggwaveHandle = await window.ggwaveHelper.createInstance(audioCtx.sampleRate, audioCtx.sampleRate);
+        ggwaveHandle = await getHelper().createInstance(audioCtx.sampleRate, audioCtx.sampleRate);
       }
 
       // Setup audio graph
@@ -136,7 +137,7 @@
         if (!isListening) return;
         const inputData = e.inputBuffer.getChannelData(0);
         try {
-          const text = window.ggwaveHelper.decodeFromFloat32(ggwaveHandle, inputData);
+          const text = getHelper().decodeFromFloat32(ggwaveHandle, inputData);
           if (text) {
             handleDecodedPayload(text);
           }
@@ -160,7 +161,11 @@
 
       startFftLoop();
     } catch (err) {
-      alert('Microphone access failed: ' + err.message + '\nPlease allow microphone permissions in your browser.');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        alert('Microphone permission was denied. Please allow microphone permissions in your browser.');
+      } else {
+        alert('Microphone initialization failed: ' + err.message);
+      }
       console.error(err);
       stopListening();
     }

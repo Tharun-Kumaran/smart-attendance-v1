@@ -36,6 +36,8 @@
   let totalPulses = 0;
   let wakeLock = null;
 
+  const getHelper = () => window.GGWaveHelper || window.ggwaveHelper;
+
   // CRC-8 calculation for payload verification
   function calcCrc(str) {
     let c = 0xAA;
@@ -83,7 +85,7 @@
       await audioCtx.resume();
     }
     if (!ggwaveHandle) {
-      ggwaveHandle = await window.ggwaveHelper.createInstance(audioCtx.sampleRate, audioCtx.sampleRate);
+      ggwaveHandle = await getHelper().createInstance(audioCtx.sampleRate, audioCtx.sampleRate);
     }
     updateKeepAlive();
     startCanvasVisualizer();
@@ -185,8 +187,8 @@
 
     // Encode with ggwave
     try {
-      const samples = window.ggwaveHelper.encodeToFloat32(ggwaveHandle, packet.payload, protocol, volume);
-      window.ggwaveHelper.playFloat32(audioCtx, samples, analyser);
+      const samples = getHelper().encodeToFloat32(ggwaveHandle, packet.payload, protocol, volume);
+      getHelper().playFloat32(audioCtx, samples, analyser);
 
       totalPulses++;
       txCountBadge.textContent = `${totalPulses} pulse${totalPulses === 1 ? '' : 's'} sent`;

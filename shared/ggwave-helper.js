@@ -214,4 +214,5 @@
     playFloat32,
     startListening,
   };
+  global.ggwaveHelper = global.GGWaveHelper;
 })(window);
