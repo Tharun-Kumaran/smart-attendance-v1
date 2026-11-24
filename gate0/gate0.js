@@ -172,33 +172,50 @@
     } catch (_) {}
   }
 
-  // Transmit a single pulse
-  async function transmitPulse() {
-    await initAudio();
-    const packet = createEphemeralPayload();
-    const protocol = txProtocolSelect.value;
-    const volume = parseInt(txVolumeInput.value, 10);
+  // Transmit a single pulse and return a Promise that resolves when the sound physically finishes
+  function transmitPulse() {
+    return new Promise(async (resolve) => {
+      await initAudio();
+      const packet = createEphemeralPayload();
+      const protocol = txProtocolSelect.value;
+      const volume = parseInt(txVolumeInput.value, 10);
 
-    // Update UI token & payload
-    displayToken.textContent = packet.token;
-    displayPayload.textContent = packet.payload;
-    displayEpoch.textContent = packet.tsHex;
-    displayCrc.textContent = packet.crc;
+      // Update UI token & payload
+      displayToken.textContent = packet.token;
+      displayPayload.textContent = packet.payload;
+      displayEpoch.textContent = packet.tsHex;
+      displayCrc.textContent = packet.crc;
 
-    // Encode with ggwave
-    try {
-      const samples = getHelper().encodeToFloat32(ggwaveHandle, packet.payload, protocol, volume);
-      getHelper().playFloat32(audioCtx, samples, analyser);
+      // Encode with ggwave
+      try {
+        const samples = getHelper().encodeToFloat32(ggwaveHandle, packet.payload, protocol, volume);
+        const source = getHelper().playFloat32(audioCtx, samples, analyser);
 
-      totalPulses++;
-      txCountBadge.textContent = `${totalPulses} pulse${totalPulses === 1 ? '' : 's'} sent`;
+        totalPulses++;
+        txCountBadge.textContent = `${totalPulses} pulse${totalPulses === 1 ? '' : 's'} sent`;
 
-      // Log in table
-      appendLog(packet.token, packet.payload, 'SENT OK');
-    } catch (err) {
-      console.error('Pulse encode/play error:', err);
-      appendLog(packet.token, packet.payload, 'ERROR: ' + err.message);
-    }
+        // Calculate actual duration
+        const durationMs = (samples.length / audioCtx.sampleRate) * 1000;
+        appendLog(packet.token, packet.payload, 'BROADCASTING');
+
+        let isDone = false;
+        const markDone = () => {
+          if (isDone) return;
+          isDone = true;
+          resolve(durationMs);
+        };
+
+        if (source && 'onended' in source) {
+          source.onended = markDone;
+        }
+        // Fallback safety timer
+        setTimeout(markDone, durationMs + 100);
+      } catch (err) {
+        console.error('Pulse encode/play error:', err);
+        appendLog(packet.token, packet.payload, 'ERROR: ' + err.message);
+        resolve(1000);
+      }
+    });
   }
 
   // Append entry to history table
@@ -235,9 +252,6 @@
     `;
     btnToggleTx.className = 'flex-1 py-4 px-6 rounded-xl font-bold text-base transition flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white shadow-lg shadow-rose-950/50 cursor-pointer';
 
-    txStatusBadge.textContent = 'ACTIVE BROADCASTING';
-    txStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-950 text-emerald-400 border border-emerald-800 animate-pulse';
-
     txPing.classList.remove('hidden');
     txDot.className = 'relative inline-flex rounded-full h-3 w-3 bg-emerald-500';
 
@@ -266,17 +280,30 @@
     countdownCircle.style.strokeDashoffset = '0';
   }
 
-  // Recursive loop
+  // Recursive loop that paces transmission with a dedicated Guard Silence gap
   async function runLoop() {
     if (!isTransmitting) return;
 
-    const intervalSec = parseFloat(rotationSecInput.value);
-    const intervalMs = intervalSec * 1000;
-    nextRotationEpochMs = Date.now() + intervalMs;
+    // 1. Transmit active pulse
+    txStatusBadge.textContent = 'TRANSMITTING PULSE';
+    txStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-emerald-950 text-emerald-400 border border-emerald-800 animate-pulse';
+    countdownText.textContent = 'TX';
+    countdownCircle.style.strokeDashoffset = '0';
 
     await transmitPulse();
 
-    // Start countdown animation
+    if (!isTransmitting) return;
+
+    // 2. Guard Silence Phase: lets room echo & phone AGC settle back to baseline
+    txStatusBadge.textContent = 'GUARD SILENCE (ECHO RESET)';
+    txStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-sky-950 text-sky-400 border border-sky-800';
+    audioLevelLabel.textContent = 'Resting Channel (Echo Silence)';
+    audioLevelLabel.className = 'text-sky-400 font-mono';
+
+    const guardSec = parseFloat(rotationSecInput.value);
+    const guardMs = guardSec * 1000;
+    nextRotationEpochMs = Date.now() + guardMs;
+
     clearInterval(countdownTimer);
     countdownTimer = setInterval(() => {
       if (!isTransmitting) {
@@ -287,7 +314,7 @@
       const remainingSec = (remainingMs / 1000).toFixed(1);
       countdownText.textContent = `${remainingSec}s`;
 
-      const progress = 1 - (remainingMs / intervalMs);
+      const progress = 1 - (remainingMs / guardMs);
       const dashoffset = progress * 100;
       countdownCircle.style.strokeDasharray = '100, 100';
       countdownCircle.style.strokeDashoffset = -dashoffset;
@@ -295,7 +322,7 @@
 
     transmitTimer = setTimeout(() => {
       runLoop();
-    }, intervalMs);
+    }, guardMs);
   }
 
   // Event Listeners

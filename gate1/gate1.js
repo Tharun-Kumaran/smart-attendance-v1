@@ -48,6 +48,36 @@
   let totalCaptures = 0;
   let latestDistortionRatio = 0;
   let latestUltrasoundEnergy = 0;
+  let wakeLock = null;
+  const bgSilentAudio = document.getElementById('bgSilentAudio');
+  const bgStatusPill = document.getElementById('bgStatusPill');
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (_) {}
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      try { wakeLock.release(); } catch (_) {}
+      wakeLock = null;
+    }
+  }
+
+  // Auto-resume audio when screen turns on or phone changes visibility
+  document.addEventListener('visibilitychange', async () => {
+    if (isListening && audioCtx) {
+      if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch (_) {}
+      }
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    }
+  });
 
   // CRC-8 validation
   function calcCrc(str) {
@@ -131,8 +161,9 @@
       analyser.smoothingTimeConstant = 0.4;
       micSource.connect(analyser);
 
-      // ScriptProcessor / PCM pipeline for ggwave
-      scriptNode = audioCtx.createScriptProcessor(2048, 1, 1);
+      // ScriptProcessor / PCM pipeline for ggwave (1024 matches native ggwave frame size)
+      scriptNode = audioCtx.createScriptProcessor(1024, 1, 1);
+      const flushZeros = new Float32Array(1024);
       scriptNode.onaudioprocess = (e) => {
         if (!isListening) return;
         const inputData = e.inputBuffer.getChannelData(0);
@@ -140,6 +171,10 @@
           const text = getHelper().decodeFromFloat32(ggwaveHandle, inputData);
           if (text) {
             handleDecodedPayload(text);
+            // Flush internal sliding buffer so packet tail does not collide with next packet preamble
+            try {
+              getHelper().decodeFromFloat32(ggwaveHandle, flushZeros);
+            } catch (_) {}
           }
         } catch (err) {
           console.error('ggwave decode error:', err);
@@ -148,6 +183,29 @@
 
       micSource.connect(scriptNode);
       scriptNode.connect(audioCtx.destination); // Required for Chrome to pump audio through ScriptProcessor
+
+      // Keep-alive handlers for sleep / screen lock
+      audioCtx.onstatechange = () => {
+        if (isListening && audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+      };
+
+      // Play silent background loop to keep OS audio process awake when locked
+      if (bgSilentAudio) {
+        bgSilentAudio.play().catch(() => {});
+      }
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Gate 1 Acoustic Receiver',
+            artist: 'Smart Attendance PoC',
+            album: 'Background Ultrasonic Listener Active',
+          });
+          navigator.mediaSession.playbackState = 'playing';
+        } catch (_) {}
+      }
+      requestWakeLock();
 
       isListening = true;
       btnToggleRxText.textContent = 'Stop Listening (Mic)';
@@ -174,6 +232,14 @@
   // Stop microphone
   function stopListening() {
     isListening = false;
+    if (bgSilentAudio) {
+      try { bgSilentAudio.pause(); } catch (_) {}
+    }
+    if ('mediaSession' in navigator) {
+      try { navigator.mediaSession.playbackState = 'none'; } catch (_) {}
+    }
+    releaseWakeLock();
+
     if (scriptNode) {
       scriptNode.disconnect();
       scriptNode = null;

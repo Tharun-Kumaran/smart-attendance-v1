@@ -236,6 +236,13 @@
           <!-- Sound & Vibration Feedback -->
           <div class="pt-2 border-t border-slate-800 space-y-2">
             <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs text-slate-300 font-medium">Background / Sleep Listening</span>
+                <p class="text-[10px] text-slate-500">Listens when phone screen is locked</p>
+              </div>
+              <span id="bgStatusPill" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">ENABLED</span>
+            </div>
+            <div class="flex items-center justify-between">
               <span class="text-xs text-slate-300">Audio Chime on Capture</span>
               <input id="chkSound" type="checkbox" checked class="accent-sky-500 h-4 w-4 rounded cursor-pointer" />
             </div>
@@ -245,6 +252,9 @@
             </div>
           </div>
         </div>
+
+  <!-- Background silent audio for OS sleep lock persistence -->
+  <audio id="bgSilentAudio" src="../shared/silent.wav" loop playsinline preload="auto"></audio>
 
         <!-- Educational Explanation Card -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3 text-xs">
