@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gate 1 — Acoustic Receiver &amp; Anti-Replay Inspector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../vendor/ggwave.js"></script>
+  <script src="../shared/ggwave-helper.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="flex h-3 w-3 relative">
+          <span id="rxPing" class="hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+          <span id="rxDot" class="relative inline-flex rounded-full h-3 w-3 bg-slate-600"></span>
+        </span>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Gate 1: Receiver
+            <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">AUDIO RECEIVER</span>
+          </h1>
+          <p class="text-xs text-slate-400">Microphone Decoder with Anti-Replay &amp; Acoustic Distortion Analysis</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="../gate0/" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition flex items-center gap-1.5">
+          <span>Open Gate 0 (Transmitter)</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- Anti-Replay Inspector Summary Banner -->
+    <section class="bg-gradient-to-r from-sky-950/60 via-slate-900 to-slate-900 border border-sky-900/40 rounded-2xl p-5 shadow-xl">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 text-sky-400 text-xs font-semibold uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            Acoustic Anti-Spoofing &amp; Replay Detection System
+          </div>
+          <p class="text-sm text-slate-300 max-w-2xl">
+            Listens for ultrasonic pulses on the phone/laptop microphone. Decodes the ephemeral timestamp nonce, calculates acoustic packet freshness, and detects speaker distortion from replayed phone recordings.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnToggleRx" class="px-5 py-3 rounded-xl font-bold text-sm bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white shadow-lg shadow-sky-950/50 flex items-center gap-2 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"></path></svg>
+            <span id="btnToggleRxText">Start Listening (Mic)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spectrum & Real-Time Verdict Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left 2 Cols: Real-Time FFT Spectrum & Live Security Verdict -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Real-Time FFT Audio Spectrum Visualizer -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono uppercase text-slate-400 tracking-wider">Acoustic Spectrum (0 – 22 kHz)</span>
+              <span id="fftPeakBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Peak: --- Hz</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <span>15–20 kHz Ultrasound Band</span>
+            </div>
+          </div>
+
+          <!-- Canvas -->
+          <div class="relative">
+            <canvas id="fftCanvas" class="w-full h-44 bg-slate-950 border border-slate-800 rounded-xl"></canvas>
+            <div class="absolute bottom-2 left-3 right-3 flex justify-between text-[10px] font-mono text-slate-500 pointer-events-none">
+              <span>0 Hz</span>
+              <span>4 kHz (Voice)</span>
+              <span>8 kHz</span>
+              <span>12 kHz</span>
+              <span class="text-emerald-400 font-bold">15 kHz</span>
+              <span class="text-emerald-400 font-bold">18 kHz</span>
+              <span class="text-emerald-400 font-bold">22 kHz</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+            <span>Mic Sample Rate: <strong id="srLabel" class="text-slate-200">-- kHz</strong></span>
+            <span>Acoustic Energy: <strong id="energyLabel" class="text-slate-200">0%</strong></span>
+          </div>
+        </div>
+
+        <!-- Latest Captured Token & Security Verdict Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-mono uppercase text-slate-400 tracking-wider">Latest Acoustic Capture</h3>
+            <span id="rxStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              STANDBY
+            </span>
+          </div>
+
+          <!-- Giant Verdict Alert Box -->
+          <div id="verdictBox" class="bg-slate-950 border border-slate-800 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
+            <div class="flex items-center gap-4 text-center sm:text-left">
+              <div id="verdictIcon" class="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl flex-shrink-0">
+                🎙️
+              </div>
+              <div class="space-y-0.5">
+                <div class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Security Verdict</div>
+                <div id="verdictTitle" class="text-xl sm:text-2xl font-black font-mono text-slate-300">
+                  Waiting for Ultrasound…
+                </div>
+                <div id="verdictDetail" class="text-xs text-slate-400">
+                  Turn on the microphone and start Gate 0 transmitter to begin.
+                </div>
+              </div>
+            </div>
+
+            <div class="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+              <div class="text-[10px] text-slate-500 uppercase font-mono">Token Age</div>
+              <div id="verdictAge" class="text-2xl font-mono font-bold text-slate-400">--</div>
+              <div id="verdictAgeSub" class="text-[10px] font-mono text-slate-500">Freshness limit: 3.5s</div>
+            </div>
+          </div>
+
+          <!-- Captured Token Details Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+              <span class="text-slate-500 text-[10px] uppercase">Token</span>
+              <div id="cardToken" class="text-lg font-bold text-emerald-400">----</div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+              <span class="text-slate-500 text-[10px] uppercase">Payload</span>
+              <div id="cardPayload" class="text-xs font-semibold text-slate-300 truncate">--:--:--</div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+              <span class="text-slate-500 text-[10px] uppercase">Distortion Index</span>
+              <div id="cardDistortion" class="text-sm font-semibold text-sky-400">--%</div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-1">
+              <span class="text-slate-500 text-[10px] uppercase">Checksum</span>
+              <div id="cardCrc" class="text-sm font-semibold text-amber-400">--</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Decoded History Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              Decoded Signal Audit Trail
+            </h3>
+            <span id="rxCountBadge" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">0 captures</span>
+          </div>
+
+          <div class="overflow-x-auto max-h-56 overflow-y-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="text-slate-400 bg-slate-950 border-b border-slate-800 sticky top-0">
+                <tr>
+                  <th class="py-2 px-3">Time</th>
+                  <th class="py-2 px-3">Token</th>
+                  <th class="py-2 px-3">Packet Age</th>
+                  <th class="py-2 px-3">Distortion</th>
+                  <th class="py-2 px-3">Security Verdict</th>
+                </tr>
+              </thead>
+              <tbody id="rxLogBody" class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td colspan="5" class="py-4 text-center text-slate-500">No signals decoded yet. Turn on listening to capture ultrasound.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Col: Interactive Attack Simulator & Defense Controls -->
+      <div class="space-y-6">
+
+        <!-- Attack Testing & Replay Simulation Panel -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-semibold text-white">Replay Attack Simulator</h3>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">TESTING</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Test what happens when a student records the audio tone and plays it back later:
+          </p>
+
+          <div class="space-y-2">
+            <button id="btnSimulateReplay" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 flex items-center justify-center gap-2 transition cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              <span>Simulate Replayed Audio (15s Old)</span>
+            </button>
+
+            <button id="btnSimulateDistortion" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-800 flex items-center justify-center gap-2 transition cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+              <span>Simulate Distorted Phone Speaker</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Detection Parameters -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h3 class="text-sm font-semibold text-white border-b border-slate-800 pb-2">Verification Thresholds</h3>
+
+          <div>
+            <div class="flex justify-between text-xs font-medium text-slate-400 mb-1">
+              <label for="freshnessThreshold">Max Token Freshness Window</label>
+              <span id="freshnessThresholdVal" class="text-sky-400 font-mono font-semibold">3.5s</span>
+            </div>
+            <input id="freshnessThreshold" type="range" min="1.5" max="8.0" step="0.5" value="3.5" class="w-full accent-sky-500 cursor-pointer" />
+            <p class="text-[11px] text-slate-500 mt-0.5">Tokens older than this are rejected as recordings.</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs font-medium text-slate-400 mb-1">
+              <label for="distortionThreshold">Distortion Sensitivity</label>
+              <span id="distortionThresholdVal" class="text-amber-400 font-mono font-semibold">45%</span>
+            </div>
+            <input id="distortionThreshold" type="range" min="20" max="80" step="5" value="45" class="w-full accent-amber-500 cursor-pointer" />
+            <p class="text-[11px] text-slate-500 mt-0.5">Flags loudspeaker sub-harmonic distortion.</p>
+          </div>
+
+          <!-- Sound & Vibration Feedback -->
+          <div class="pt-2 border-t border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-300">Audio Chime on Capture</span>
+              <input id="chkSound" type="checkbox" checked class="accent-sky-500 h-4 w-4 rounded cursor-pointer" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-300">Haptic Vibration on Phone</span>
+              <input id="chkVibrate" type="checkbox" checked class="accent-sky-500 h-4 w-4 rounded cursor-pointer" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Educational Explanation Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3 text-xs">
+          <h3 class="font-semibold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-slate-400">
+            Why Replay Attacks Fail
+          </h3>
+
+          <div class="space-y-2 text-slate-400 leading-relaxed">
+            <p>
+              <strong class="text-slate-200">WhatsApp / Codec Stripping:</strong> If someone records a voice memo or sends audio over WhatsApp, lossy compression completely cuts off everything above 16 kHz. Gate 1 detects absolute silence.
+            </p>
+            <p>
+              <strong class="text-slate-200">Physical Speaker Roll-Off:</strong> Phone speakers drop -30 dB at 18 kHz. They cannot reproduce enough ultrasound energy without creating severe sub-harmonic buzz.
+            </p>
+            <p>
+              <strong class="text-slate-200">Ephemeral Nonces:</strong> Tokens expire in seconds. Any pre-recorded sound is stamped with past time and rejected automatically.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+    Gate 1 — Acoustic Receiver &amp; Anti-Replay Inspector &bull; Zero Tunnel Required &bull; Runs 100% Client-Side WebAssembly
+  </footer>
+
+  <script src="gate1.js"></script>
+</body>
+</html>

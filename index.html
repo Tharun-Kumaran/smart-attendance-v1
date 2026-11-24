@@ -2,11 +2,113 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=./lab/" />
-  <title>Redirecting to Acoustic Lab v1.0…</title>
-  <script>window.location.replace('./lab/');</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acoustic System — Gate 0 &amp; Gate 1 Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body style="background:#020617;color:#f8fafc;font-family:sans-serif;padding:2rem;">
-  Redirecting to <a href="./lab/" style="color:#38bdf8;">Acoustic Lab v1.0</a>…
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-center items-center p-4 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <div class="max-w-3xl w-full space-y-8 my-auto">
+
+    <!-- Header -->
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Zero Tunnel &bull; 100% Client-Side WebAssembly &bull; 24/7 Cloud Hosted
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        Acoustic Transmission System
+      </h1>
+      <p class="text-sm sm:text-base text-slate-400 max-w-xl mx-auto">
+        Near-ultrasonic physical transmission (15–20 kHz) with anti-recording compression defense and ephemeral cryptographic nonce verification.
+      </p>
+    </div>
+
+    <!-- Gate Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Gate 0 (Transmitter) -->
+      <a href="./gate0/" class="group block bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-6 shadow-xl transition-all duration-200 hover:-translate-y-1 relative overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all"></div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-800/80 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+              📡
+            </div>
+            <span class="text-[11px] font-mono px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold">
+              GATE 0 &bull; SENDER
+            </span>
+          </div>
+
+          <div>
+            <h2 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+              <span>Gate 0: Transmitter</span>
+              <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+              Open this on your <strong>Laptop or Smart Board</strong>. Broadcasts rotating ultrasonic tokens with live timestamps and audio keep-alive.
+            </p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+            <span>Band: 15–19.5 kHz</span>
+            <span class="text-emerald-400">Launch Transmitter &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Gate 1 (Receiver) -->
+      <a href="./gate1/" class="group block bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-sky-500/50 rounded-2xl p-6 shadow-xl transition-all duration-200 hover:-translate-y-1 relative overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-sky-500/5 rounded-full blur-2xl group-hover:bg-sky-500/10 transition-all"></div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-xl bg-sky-950/80 border border-sky-800/80 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+              🎙️
+            </div>
+            <span class="text-[11px] font-mono px-2.5 py-1 rounded-full bg-sky-950 text-sky-400 border border-sky-800 font-semibold">
+              GATE 1 &bull; RECEIVER
+            </span>
+          </div>
+
+          <div>
+            <h2 class="text-xl font-bold text-white group-hover:text-sky-400 transition-colors flex items-center gap-1.5">
+              <span>Gate 1: Receiver</span>
+              <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+              Open this on your <strong>Phone or Receiving Device</strong>. Real-time microphone spectrum analyzer, anti-replay blocker &amp; distortion inspector.
+            </p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+            <span>Freshness: &le; 3.5s Check</span>
+            <span class="text-sky-400">Launch Receiver &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Acoustic Lab Link -->
+    <div class="text-center pt-2">
+      <a href="./lab/" class="text-xs text-slate-500 hover:text-slate-300 transition inline-flex items-center gap-1 font-mono">
+        <span>Looking for Phase 1 Acoustic Lab? Click here</span>
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </a>
+    </div>
+
+    <!-- How It Works Summary -->
+    <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-xs space-y-2 text-slate-400">
+      <div class="font-semibold text-slate-300">How to test between two separate devices:</div>
+      <ol class="list-decimal list-inside space-y-1 text-slate-400">
+        <li>Open <strong>Gate 0</strong> on your laptop: click <strong class="text-emerald-400">"Start Acoustic Transmitter"</strong>.</li>
+        <li>Open <strong>Gate 1</strong> on your phone: click <strong class="text-sky-400">"Start Listening (Mic)"</strong>.</li>
+        <li>Notice that the physical ultrasound transmits through the air without Wi-Fi pairing or tunnels!</li>
+        <li>Click <em>"Simulate Replayed Audio"</em> on Gate 1 to see how recorded audio playback is instantly blocked!</li>
+      </ol>
+    </div>
+
+  </div>
+
 </body>
 </html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gate 0 — Ultrasonic Audio Transmitter (Sender)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../vendor/ggwave.js"></script>
+  <script src="../shared/ggwave-helper.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="flex h-3 w-3 relative">
+          <span id="txPing" class="hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span id="txDot" class="relative inline-flex rounded-full h-3 w-3 bg-slate-600"></span>
+        </span>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Gate 0: Transmitter
+            <span class="text-xs font-mono font-normal px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AUDIO SENDER</span>
+          </h1>
+          <p class="text-xs text-slate-400">Ultrasonic Acoustic Broadcast with Ephemeral Nonce Timestamps</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="../gate1/" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition flex items-center gap-1.5">
+          <span>Open Gate 1 (Receiver)</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+    <!-- Hero / Anti-Recording Security Notice -->
+    <section class="bg-gradient-to-r from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-900/40 rounded-2xl p-5 shadow-xl">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            Anti-Recording & Anti-Playback Protocol Active
+          </div>
+          <p class="text-sm text-slate-300 max-w-2xl">
+            Transmits sound in the <strong class="text-white">15 kHz – 19.5 kHz near-ultrasonic band</strong>. Audio compression algorithms (WhatsApp, Opus, AAC, MP3) automatically erase this frequency band when recorded, and each acoustic pulse carries a <strong class="text-white">2.5-second rotating timestamp nonce</strong> that expires before any playback can occur.
+          </p>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2.5 text-center min-w-[140px]">
+          <div class="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Carrier Band</div>
+          <div class="text-sm font-mono font-bold text-emerald-400">15.0 – 19.5 kHz</div>
+          <div class="text-[10px] text-slate-500 font-mono">Human Inaudible</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Broadcast Dashboard -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left Column: Big Transmitter Control & Live Token -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Active Token Display Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono uppercase text-slate-400 tracking-wider">Current Broadcast Nonce</span>
+            <span id="txStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              TRANSMITTER IDLE
+            </span>
+          </div>
+
+          <!-- Giant Rotating Token Display -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-6 py-4 border-y border-slate-800/80">
+            <div class="space-y-1 text-center sm:text-left">
+              <div class="text-xs text-slate-400 font-mono">Rotating Ephemeral Token</div>
+              <div id="displayToken" class="text-5xl sm:text-6xl font-black font-mono tracking-widest text-emerald-400 drop-shadow-[0_0_20px_rgba(52,211,153,0.3)]">
+                ----
+              </div>
+            </div>
+
+            <!-- Countdown Ring -->
+            <div class="flex items-center gap-4">
+              <div class="relative w-20 h-20 flex items-center justify-center">
+                <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                  <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path id="countdownCircle" class="text-emerald-500 transition-all duration-100" stroke-width="3.5" stroke-dasharray="100, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="absolute flex flex-col items-center">
+                  <span id="countdownText" class="text-sm font-mono font-bold text-white">2.5s</span>
+                  <span class="text-[9px] text-slate-400 uppercase">valid</span>
+                </div>
+              </div>
+              <div class="space-y-1 text-xs font-mono text-slate-400">
+                <div>Payload: <span id="displayPayload" class="text-slate-200 font-semibold break-all">--:--:--</span></div>
+                <div>Epoch: <span id="displayEpoch" class="text-indigo-400 font-semibold">--------</span></div>
+                <div>Checksum: <span id="displayCrc" class="text-amber-400 font-semibold">--</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Big Action Button -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button id="btnToggleTx" class="flex-1 py-4 px-6 rounded-xl font-bold text-base transition flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-lg shadow-emerald-950/50 cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>Start Acoustic Transmitter</span>
+            </button>
+            <button id="btnSendSingle" class="py-4 px-6 rounded-xl font-semibold text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+              Send Single Pulse Now
+            </button>
+          </div>
+
+          <!-- Animated Audio Wave Canvas -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono text-slate-400">
+              <span>Transmitter Audio Activity</span>
+              <span id="audioLevelLabel">Silent</span>
+            </div>
+            <canvas id="txCanvas" class="w-full h-16 bg-slate-950 border border-slate-800 rounded-lg"></canvas>
+          </div>
+        </div>
+
+        <!-- Transmission History Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Transmission Log
+            </h3>
+            <span id="txCountBadge" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">0 pulses sent</span>
+          </div>
+          <div class="overflow-x-auto max-h-48 overflow-y-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="text-slate-400 bg-slate-950 border-b border-slate-800 sticky top-0">
+                <tr>
+                  <th class="py-2 px-3">#</th>
+                  <th class="py-2 px-3">Local Time</th>
+                  <th class="py-2 px-3">Token</th>
+                  <th class="py-2 px-3">Payload</th>
+                  <th class="py-2 px-3">Status</th>
+                </tr>
+              </thead>
+              <tbody id="txLogBody" class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td colspan="5" class="py-4 text-center text-slate-500">No pulses transmitted yet. Click "Start Acoustic Transmitter" above.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Settings & Defense Breakdown -->
+      <div class="space-y-6">
+
+        <!-- Transmitter Controls -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h3 class="text-sm font-semibold text-white border-b border-slate-800 pb-2">Transmitter Settings</h3>
+
+          <!-- Rotation Interval -->
+          <div>
+            <div class="flex justify-between text-xs font-medium text-slate-400 mb-1">
+              <label for="rotationSec">Token Lifespan / Rotation</label>
+              <span id="rotationVal" class="text-emerald-400 font-mono font-semibold">2.5s</span>
+            </div>
+            <input id="rotationSec" type="range" min="1.5" max="6.0" step="0.5" value="2.5" class="w-full accent-emerald-500 cursor-pointer" />
+            <p class="text-[11px] text-slate-500 mt-0.5">Shorter interval prevents recording and relay attacks.</p>
+          </div>
+
+          <!-- Volume -->
+          <div>
+            <div class="flex justify-between text-xs font-medium text-slate-400 mb-1">
+              <label for="txVolume">Output Volume</label>
+              <span id="txVolumeVal" class="text-indigo-400 font-mono font-semibold">65%</span>
+            </div>
+            <input id="txVolume" type="range" min="10" max="100" step="5" value="65" class="w-full accent-indigo-500 cursor-pointer" />
+            <p class="text-[11px] text-slate-500 mt-0.5">Controls physical ultrasound speaker energy.</p>
+          </div>
+
+          <!-- Protocol -->
+          <div>
+            <label for="txProtocol" class="block text-xs font-medium text-slate-400 mb-1">Protocol / Speed</label>
+            <select id="txProtocol" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+              <option value="GGWAVE_PROTOCOL_ULTRASOUND_FASTEST" selected>ULTRASOUND_FASTEST (~0.9s / 15-19.5 kHz)</option>
+              <option value="GGWAVE_PROTOCOL_ULTRASOUND_FAST">ULTRASOUND_FAST (~1.2s / 15-19.5 kHz)</option>
+              <option value="GGWAVE_PROTOCOL_AUDIBLE_FAST">AUDIBLE_FAST (Audible Sanity Test)</option>
+            </select>
+          </div>
+
+          <!-- Audio Keep-Alive -->
+          <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-medium text-slate-300">Audio Keep-Alive</div>
+              <div class="text-[10px] text-slate-500">Prevents speaker sleep & lag</div>
+            </div>
+            <input id="chkKeepAlive" type="checkbox" checked class="accent-emerald-500 h-4 w-4 rounded cursor-pointer" />
+          </div>
+        </div>
+
+        <!-- Defense Breakdown Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3 text-xs">
+          <h3 class="font-semibold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-slate-400">
+            How This Defeats Recording
+          </h3>
+
+          <div class="space-y-2.5">
+            <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-1">
+              <div class="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <span>1. Compression Stripping</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                Voice notes & chat apps (WhatsApp, Telegram) compress with Opus/AAC codecs, deleting all sound >16 kHz. A recorded voice note turns into complete silence.
+              </p>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-1">
+              <div class="text-sky-400 font-semibold flex items-center gap-1.5">
+                <span>2. Ephemeral Expiration</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                The embedded timestamp expires in 2.5s. By the time someone saves, transfers, and hits play, Gate 1 rejects it as a replay attack.
+              </p>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-1">
+              <div class="text-amber-400 font-semibold flex items-center gap-1.5">
+                <span>3. Speaker Harmonic Distortion</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                Playing ultrasound through a phone speaker creates high audible distortion (THD) that Gate 1 detects and flags.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+    Gate 0 — Ultrasonic Acoustic Transmitter &bull; Zero Tunnel Required &bull; Runs 100% Client-Side WebAssembly
+  </footer>
+
+  <script src="gate0.js"></script>
+</body>
+</html>
